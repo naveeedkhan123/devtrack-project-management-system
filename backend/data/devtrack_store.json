@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "timestamp": "2026-10-08T19:04:53.074Z",
+  "timestamp": "2026-10-08T19:29:03.264Z",
   "counts": {
     "users": 1,
     "projects": 1,
@@ -13,10 +13,10 @@
   "data": {
     "users": [
       {
-        "_id": "6ac7e954521f26a92fa161da",
+        "_id": "6ac7eeff31b20df0f0d8901d",
         "name": "Persistent Dev",
-        "email": "dev_1791486292877@devtrack.io",
-        "password": "$2a$10$NKU41SUUuQ0AtTndqtim9.vwET93DA1IZKRv4fd7ivjySWPpmZ5SG",
+        "email": "dev_1791487743122@devtrack.io",
+        "password": "$2a$10$e83aqSiguz1YDF24wVxDYe0kL8olOk8KiF2XFqb.1V8BotKc/dhAq",
         "role": "admin",
         "avatar": "",
         "profilePicture": "",
@@ -28,27 +28,27 @@
           "taskAssignedAlerts": true,
           "bugAssignedAlerts": true
         },
-        "createdAt": "2026-10-08T19:04:52.901Z",
-        "updatedAt": "2026-10-08T19:04:52.901Z",
+        "createdAt": "2026-10-08T19:29:03.136Z",
+        "updatedAt": "2026-10-08T19:29:03.136Z",
         "__v": 0
       }
     ],
     "projects": [
       {
-        "_id": "6ac7e955521f26a92fa161de",
+        "_id": "6ac7eeff31b20df0f0d89021",
         "name": "Persistence Project",
-        "key": "PST133",
+        "key": "PST223",
         "description": "Project to verify MongoDB persistence",
         "status": "active",
         "priority": "high",
-        "manager": "6ac7e954521f26a92fa161da",
+        "manager": "6ac7eeff31b20df0f0d8901d",
         "members": [
-          "6ac7e954521f26a92fa161da"
+          "6ac7eeff31b20df0f0d8901d"
         ],
-        "createdBy": "6ac7e954521f26a92fa161da",
-        "startDate": "2026-10-08T19:04:53.021Z",
-        "createdAt": "2026-10-08T19:04:53.025Z",
-        "updatedAt": "2026-10-08T19:04:53.025Z",
+        "createdBy": "6ac7eeff31b20df0f0d8901d",
+        "startDate": "2026-10-08T19:29:03.235Z",
+        "createdAt": "2026-10-08T19:29:03.238Z",
+        "updatedAt": "2026-10-08T19:29:03.238Z",
         "__v": 0
       }
     ],
@@ -58,14 +58,14 @@
     "notifications": [],
     "activityLogs": [
       {
-        "_id": "6ac7e955521f26a92fa161dc",
-        "user": "6ac7e954521f26a92fa161da",
+        "_id": "6ac7eeff31b20df0f0d8901f",
+        "user": "6ac7eeff31b20df0f0d8901d",
         "action": "registered_account",
         "details": "Persistent Dev registered as admin",
         "entityType": "user",
-        "entityId": "6ac7e954521f26a92fa161da",
+        "entityId": "6ac7eeff31b20df0f0d8901d",
         "project": null,
-        "createdAt": "2026-10-08T19:04:53.012Z",
+        "createdAt": "2026-10-08T19:29:03.230Z",
         "__v": 0
       }
     ]

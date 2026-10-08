@@ -311,6 +311,8 @@ const DashboardPage = () => {
                         fontSize: '12px',
                         color: '#F9FAFB',
                       }}
+                      labelStyle={{ color: '#FFFFFF' }}
+                      itemStyle={{ color: '#FFFFFF' }}
                     />
                     <Legend
                       verticalAlign="bottom"
