@@ -28,6 +28,17 @@ const ProfilePage = () => {
     name: user?.name || '',
     bio: user?.bio || '',
   });
+
+  // Keep form synchronized with loaded user profile from MongoDB
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        name: user.name || '',
+        bio: user.bio || '',
+      });
+    }
+  }, [user]);
+
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [savingProfilePicture, setSavingProfilePicture] = useState(false);

@@ -503,6 +503,8 @@ if (require.main === module) {
     try {
       await connectDB();
       await seedDatabase();
+      const { saveDatabaseSnapshot } = require('../services/persistenceService');
+      await saveDatabaseSnapshot();
       await disconnectDB();
       process.exit(0);
     } catch (err) {

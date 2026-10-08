@@ -38,5 +38,8 @@ Thumbs.db
 # Uploads
 backend/uploads/profile-images/*
 !backend/uploads/profile-images/.gitkeep
+
+# Persistence temp files
+backend/data/*.tmp
 uploads/
 

@@ -1,0 +1,73 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2026-10-08T19:04:53.074Z",
+  "counts": {
+    "users": 1,
+    "projects": 1,
+    "tasks": 0,
+    "bugs": 0,
+    "comments": 0,
+    "notifications": 0,
+    "activityLogs": 1
+  },
+  "data": {
+    "users": [
+      {
+        "_id": "6ac7e954521f26a92fa161da",
+        "name": "Persistent Dev",
+        "email": "dev_1791486292877@devtrack.io",
+        "password": "$2a$10$NKU41SUUuQ0AtTndqtim9.vwET93DA1IZKRv4fd7ivjySWPpmZ5SG",
+        "role": "admin",
+        "avatar": "",
+        "profilePicture": "",
+        "bio": "",
+        "status": "active",
+        "preferences": {
+          "theme": "dark",
+          "emailNotifications": true,
+          "taskAssignedAlerts": true,
+          "bugAssignedAlerts": true
+        },
+        "createdAt": "2026-10-08T19:04:52.901Z",
+        "updatedAt": "2026-10-08T19:04:52.901Z",
+        "__v": 0
+      }
+    ],
+    "projects": [
+      {
+        "_id": "6ac7e955521f26a92fa161de",
+        "name": "Persistence Project",
+        "key": "PST133",
+        "description": "Project to verify MongoDB persistence",
+        "status": "active",
+        "priority": "high",
+        "manager": "6ac7e954521f26a92fa161da",
+        "members": [
+          "6ac7e954521f26a92fa161da"
+        ],
+        "createdBy": "6ac7e954521f26a92fa161da",
+        "startDate": "2026-10-08T19:04:53.021Z",
+        "createdAt": "2026-10-08T19:04:53.025Z",
+        "updatedAt": "2026-10-08T19:04:53.025Z",
+        "__v": 0
+      }
+    ],
+    "tasks": [],
+    "bugs": [],
+    "comments": [],
+    "notifications": [],
+    "activityLogs": [
+      {
+        "_id": "6ac7e955521f26a92fa161dc",
+        "user": "6ac7e954521f26a92fa161da",
+        "action": "registered_account",
+        "details": "Persistent Dev registered as admin",
+        "entityType": "user",
+        "entityId": "6ac7e954521f26a92fa161da",
+        "project": null,
+        "createdAt": "2026-10-08T19:04:53.012Z",
+        "__v": 0
+      }
+    ]
+  }
+}
