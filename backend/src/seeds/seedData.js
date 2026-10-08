@@ -25,7 +25,7 @@ const seedDatabase = async () => {
     logger.info('Creating demo users...');
     // Demo users — passwords will be hashed by UserSchema pre-save hook
     const admin = await User.create({
-      name: 'Alex Morgan',
+      name: 'Naveed Khan',
       email: 'admin@devtrack.io',
       password: 'Admin123!',
       role: 'admin',
@@ -443,7 +443,7 @@ const seedDatabase = async () => {
         recipient: dev3._id,
         sender: admin._id,
         title: 'Added to Project',
-        message: 'Alex Morgan added you to project [KSN] KisanLink',
+        message: 'Naveed Khan added you to project [KSN] KisanLink',
         type: 'member_added',
         link: `/projects/${project3._id}`,
         isRead: true,
@@ -466,7 +466,7 @@ const seedDatabase = async () => {
       {
         user: admin._id,
         action: 'created_project',
-        details: 'Alex Morgan created project [SCT] SehatConnect',
+        details: 'Naveed Khan created project [SCT] SehatConnect',
         entityType: 'project',
         entityId: project1._id,
         project: project1._id,
@@ -513,7 +513,7 @@ const seedDatabase = async () => {
     logger.info('✅ DevTrack database seeded successfully with Pakistani startup data!');
     logger.info('-----------------------------------------------');
     logger.info('Demo Credentials:');
-    logger.info('  Admin:           admin@devtrack.io  /  Admin123!');
+    logger.info('  Admin:           admin@devtrack.io  /  Admin123! (Naveed Khan)');
     logger.info('  Project Manager: pm@devtrack.io     /  Pm123!  (Ayesha Khan)');
     logger.info('  Developer 1:     dev1@devtrack.io   /  Dev123! (Hamza Ahmed)');
     logger.info('  Developer 2:     dev2@devtrack.io   /  Dev123! (Hira Malik)');
