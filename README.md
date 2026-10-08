@@ -100,7 +100,7 @@ cp .env.example .env
 # Seed the database with realistic demo data
 npm run seed
 
-# Start development server (runs on port 5001)
+# Start development server (runs on port 5000)
 npm run dev
 ```
 
