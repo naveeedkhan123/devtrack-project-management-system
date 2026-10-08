@@ -33,10 +33,20 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const {
+  uploadProfilePicture,
+  removeProfilePicture,
+} = require('../controllers/userController');
+const { uploadProfileImageMiddleware } = require('../middleware/upload');
+
 router.post('/register', authLimiter, registerValidator, validate, register);
 router.post('/login', authLimiter, loginValidator, validate, login);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfileValidator, validate, updateProfile);
+router.patch('/profile-picture', protect, uploadProfileImageMiddleware, uploadProfilePicture);
+router.post('/profile-picture', protect, uploadProfileImageMiddleware, uploadProfilePicture);
+router.put('/profile-picture', protect, uploadProfileImageMiddleware, uploadProfilePicture);
+router.delete('/profile-picture', protect, removeProfilePicture);
 router.put('/change-password', protect, changePasswordValidator, validate, changePassword);
 router.post('/forgot-password', authLimiter, forgotPasswordValidator, validate, forgotPassword);
 router.post('/reset-password/:token', authLimiter, resetPasswordValidator, validate, resetPassword);

@@ -35,4 +35,8 @@ Thumbs.db
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
+# Uploads
+backend/uploads/profile-images/*
+!backend/uploads/profile-images/.gitkeep
+uploads/
+

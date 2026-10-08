@@ -25,4 +25,18 @@ export const userService = {
     const response = await api.delete(`/users/${id}`);
     return response.data;
   },
+
+  uploadProfilePicture: async (file) => {
+    const formData = new FormData();
+    formData.append('profilePicture', file);
+    const response = await api.patch('/users/profile-picture', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  removeProfilePicture: async () => {
+    const response = await api.delete('/users/profile-picture');
+    return response.data;
+  },
 };

@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const User = require('../models/User');
 const Task = require('../models/Task');
 const Bug = require('../models/Bug');
@@ -189,10 +191,118 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    Upload / Update profile picture
+ * @route   PATCH /api/users/profile-picture
+ * @access  Private (All authenticated roles)
+ */
+const uploadProfilePicture = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return errorResponse(res, 'Please provide an image file', 400);
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return errorResponse(res, 'User not found', 404);
+    }
+
+    // Clean up old local profile image if it exists
+    if (user.profilePicture && user.profilePicture.startsWith('/uploads/profile-images/')) {
+      const oldFilename = path.basename(user.profilePicture);
+      const oldFilePath = path.join(__dirname, '../../uploads/profile-images', oldFilename);
+      if (fs.existsSync(oldFilePath) && oldFilename !== req.file.filename) {
+        try {
+          fs.unlinkSync(oldFilePath);
+        } catch (unlinkErr) {
+          console.error('Failed to remove old profile picture:', unlinkErr);
+        }
+      }
+    }
+
+    const pictureUrl = `/uploads/profile-images/${req.file.filename}`;
+    user.profilePicture = pictureUrl;
+    user.avatar = pictureUrl;
+    await user.save();
+
+    await logActivity({
+      user: user._id,
+      action: 'updated_profile_picture',
+      details: `${user.name} updated their profile picture`,
+      entityType: 'user',
+      entityId: user._id,
+    });
+
+    const userObj = user.toObject();
+    delete userObj.password;
+    delete userObj.resetPasswordToken;
+    delete userObj.resetPasswordExpire;
+
+    return successResponse(res, 'Profile picture updated successfully.', {
+      user: userObj,
+      profilePicture: pictureUrl,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Remove profile picture
+ * @route   DELETE /api/users/profile-picture
+ * @access  Private (All authenticated roles)
+ */
+const removeProfilePicture = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return errorResponse(res, 'User not found', 404);
+    }
+
+    // Remove file from disk if it was an uploaded image
+    if (user.profilePicture && user.profilePicture.startsWith('/uploads/profile-images/')) {
+      const filename = path.basename(user.profilePicture);
+      const filePath = path.join(__dirname, '../../uploads/profile-images', filename);
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (unlinkErr) {
+          console.error('Failed to delete profile picture file:', unlinkErr);
+        }
+      }
+    }
+
+    user.profilePicture = '';
+    user.avatar = '';
+    await user.save();
+
+    await logActivity({
+      user: user._id,
+      action: 'removed_profile_picture',
+      details: `${user.name} removed their profile picture`,
+      entityType: 'user',
+      entityId: user._id,
+    });
+
+    const userObj = user.toObject();
+    delete userObj.password;
+    delete userObj.resetPasswordToken;
+    delete userObj.resetPasswordExpire;
+
+    return successResponse(res, 'Profile picture removed successfully.', {
+      user: userObj,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getUsers,
   getAdminUsers,
   updateUserRole,
   toggleUserStatus,
   deleteUser,
+  uploadProfilePicture,
+  removeProfilePicture,
 };

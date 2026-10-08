@@ -49,6 +49,7 @@ const register = async (req, res, next) => {
           email: user.email,
           role: user.role,
           avatar: user.avatar,
+          profilePicture: user.profilePicture,
           bio: user.bio,
           preferences: user.preferences,
           createdAt: user.createdAt,
@@ -94,6 +95,7 @@ const login = async (req, res, next) => {
         email: user.email,
         role: user.role,
         avatar: user.avatar,
+        profilePicture: user.profilePicture,
         bio: user.bio,
         preferences: user.preferences,
         createdAt: user.createdAt,
@@ -125,13 +127,14 @@ const getMe = async (req, res, next) => {
  */
 const updateProfile = async (req, res, next) => {
   try {
-    const { name, bio, avatar, preferences } = req.body;
+    const { name, bio, avatar, profilePicture, preferences } = req.body;
 
     const user = await User.findById(req.user.id);
 
     if (name) user.name = name;
     if (bio !== undefined) user.bio = bio;
     if (avatar !== undefined) user.avatar = avatar;
+    if (profilePicture !== undefined) user.profilePicture = profilePicture;
     if (preferences) {
       user.preferences = { ...user.preferences.toObject(), ...preferences };
     }

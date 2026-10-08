@@ -73,3 +73,29 @@ export const getInitials = (name) => {
   if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 };
+
+/**
+ * Resolves avatar image path to a full accessible URL.
+ * Handles external URLs, blobs, data URLs, and relative upload paths.
+ */
+export const getAvatarUrl = (avatar) => {
+  if (!avatar) return null;
+  if (
+    avatar.startsWith('http://') ||
+    avatar.startsWith('https://') ||
+    avatar.startsWith('data:') ||
+    avatar.startsWith('blob:')
+  ) {
+    return avatar;
+  }
+  const apiUrl = import.meta.env.VITE_API_URL || '';
+  if (apiUrl.startsWith('http')) {
+    try {
+      const origin = new URL(apiUrl).origin;
+      return `${origin}${avatar.startsWith('/') ? '' : '/'}${avatar}`;
+    } catch {
+      return avatar;
+    }
+  }
+  return avatar;
+};

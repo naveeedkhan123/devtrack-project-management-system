@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   User,
   Mail,
@@ -7,15 +7,18 @@ import {
   Lock,
   Save,
   CheckCircle,
+  Image,
+  Upload,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { authService } from '../../services/authService';
+import { userService } from '../../services/userService';
 import Card, { CardHeader, CardTitle, CardContent } from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import { formatDate } from '../../utils/dateUtils';
-import { getInitials } from '../../utils/formatters';
+import { getAvatarUrl, getInitials } from '../../utils/formatters';
 
 const ProfilePage = () => {
   const { user, updateUser } = useAuth();
@@ -24,8 +27,18 @@ const ProfilePage = () => {
   const [profileData, setProfileData] = useState({
     name: user?.name || '',
     bio: user?.bio || '',
-    avatar: user?.avatar || '',
   });
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [savingProfilePicture, setSavingProfilePicture] = useState(false);
+  const fileInputRef = useRef(null);
+
+  useEffect(
+    () => () => {
+      if (imagePreview) URL.revokeObjectURL(imagePreview);
+    },
+    [imagePreview]
+  );
 
   const [passwords, setPasswords] = useState({
     currentPassword: '',
@@ -40,7 +53,10 @@ const ProfilePage = () => {
     e.preventDefault();
     try {
       setSavingProfile(true);
-      const res = await authService.updateProfile(profileData);
+      const res = await authService.updateProfile({
+        name: profileData.name,
+        bio: profileData.bio,
+      });
       if (res?.data?.user) {
         updateUser(res.data.user);
         success('Profile updated successfully');
@@ -49,6 +65,46 @@ const ProfilePage = () => {
       error(err.response?.data?.message || 'Failed to update profile');
     } finally {
       setSavingProfile(false);
+    }
+  };
+
+  const handleImageSelection = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      error('Please select a JPG, PNG, or WEBP image.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      error('Please select an image under 5MB.');
+      return;
+    }
+
+    setSelectedImage(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleProfilePictureSubmit = async () => {
+    if (!selectedImage) return;
+
+    try {
+      setSavingProfilePicture(true);
+      const res = await userService.uploadProfilePicture(selectedImage);
+      if (!res?.data?.user) {
+        throw new Error('Profile picture was not returned');
+      }
+
+      updateUser(res.data.user);
+      setSelectedImage(null);
+      setImagePreview(null);
+      success('Profile picture updated successfully');
+    } catch (err) {
+      error(err.response?.data?.message || err.message || 'Failed to upload profile picture');
+    } finally {
+      setSavingProfilePicture(false);
     }
   };
 
@@ -97,9 +153,9 @@ const ProfilePage = () => {
       {/* Profile Overview Card */}
       <Card className="p-6">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
-          {user?.avatar ? (
+          {getAvatarUrl(user?.avatar || user?.profilePicture) ? (
             <img
-              src={user.avatar}
+              src={getAvatarUrl(user?.avatar || user?.profilePicture)}
               alt={user.name}
               className="w-20 h-20 rounded-2xl object-cover border-2 border-brand-500 shadow-md"
             />
@@ -161,15 +217,68 @@ const ProfilePage = () => {
               />
             </div>
 
-            <Input
-              label="Avatar Image URL (Optional)"
-              value={profileData.avatar}
-              onChange={(e) =>
-                setProfileData((prev) => ({ ...prev, avatar: e.target.value }))
-              }
-              placeholder="https://images.unsplash.com/photo-..."
-              helperText="Paste any public direct HTTPS image URL"
-            />
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                Profile Picture
+              </label>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                {selectedImage ? (
+                  <img
+                    src={imagePreview}
+                    alt="Selected profile picture preview"
+                    className="w-20 h-20 rounded-2xl object-cover border-2 border-brand-500 shadow-md"
+                  />
+                ) : getAvatarUrl(user?.avatar || user?.profilePicture) ? (
+                  <img
+                    src={getAvatarUrl(user?.avatar || user?.profilePicture)}
+                    alt="Current profile picture"
+                    className="w-20 h-20 rounded-2xl object-cover border-2 border-gray-200 dark:border-gray-700"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-400 flex items-center justify-center">
+                    <Image className="w-7 h-7" />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleImageSelection}
+                    className="sr-only"
+                    aria-label="Choose a profile picture from your device"
+                    disabled={savingProfilePicture}
+                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      icon={Image}
+                      disabled={savingProfilePicture}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      Choose from Device
+                    </Button>
+                    {selectedImage && (
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="sm"
+                        icon={Upload}
+                        isLoading={savingProfilePicture}
+                        onClick={handleProfilePictureSubmit}
+                      >
+                        Save Picture
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Choose a JPG, PNG, or WEBP image (maximum 5MB).
+                  </p>
+                </div>
+              </div>
+            </div>
 
             <div className="flex justify-end pt-2">
               <Button
