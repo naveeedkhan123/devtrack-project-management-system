@@ -1,5 +1,6 @@
 const request = require('supertest');
 const app = require('../app');
+const User = require('../models/User');
 describe('Authentication API Suite', () => {
   const testUser = {
     name: 'Test Engineer',
@@ -77,6 +78,26 @@ describe('Authentication API Suite', () => {
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
   });
+
+  test.each(['admin', 'project_manager', 'developer'])(
+    'POST /api/auth/login - Authenticates an existing %s role',
+    async (role) => {
+      const user = await User.create({
+        name: `${role} Login`,
+        email: `${role}@devtrack.io`,
+        password: testUser.password,
+        role,
+      });
+
+      const res = await request(app)
+        .post('/api/auth/login')
+        .send({ email: user.email, password: testUser.password });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.token).toBeDefined();
+      expect(res.body.data.user.role).toBe(role);
+    }
+  );
 
   test('GET /api/auth/me - Access protected profile with Bearer token', async () => {
     const regRes = await request(app).post('/api/auth/register').send(testUser);
