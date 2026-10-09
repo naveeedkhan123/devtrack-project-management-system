@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   FolderKanban,
   Plus,
   Search,
-  Filter,
-  Calendar,
   CheckSquare,
   Bug,
-  Users,
   ArrowRight,
 } from 'lucide-react';
 import { projectService } from '../../services/projectService';
@@ -18,23 +15,32 @@ import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
+import Pagination from '../../components/common/Pagination';
 import ProjectModal from '../../components/projects/ProjectModal';
-import { formatDate } from '../../utils/dateUtils';
 import { getInitials } from '../../utils/formatters';
+import { useToast } from '../../context/ToastContext';
 
 const ProjectsPage = () => {
   const { isManager, isAdmin } = useAuth();
+  const location = useLocation();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
+  const [search, setSearch] = useState(() => new URLSearchParams(location.search).get('search') || '');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { error } = useToast();
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, priorityFilter]);
 
   const fetchProjects = useCallback(async () => {
     try {
       setLoading(true);
-      const params = {};
+      const params = { page, limit: 25 };
       if (search) params.search = search;
       if (statusFilter !== 'all') params.status = statusFilter;
       if (priorityFilter !== 'all') params.priority = priorityFilter;
@@ -42,13 +48,14 @@ const ProjectsPage = () => {
       const res = await projectService.getProjects(params);
       if (res?.data?.projects) {
         setProjects(res.data.projects);
+        setPagination(res.data.pagination || { page, limit: 25, total: res.data.total, pages: 1 });
       }
     } catch (err) {
-      console.error('Failed to fetch projects:', err);
+      error(err.response?.data?.message || 'Failed to fetch projects');
     } finally {
       setLoading(false);
     }
-  }, [search, statusFilter, priorityFilter]);
+  }, [search, statusFilter, priorityFilter, page, error]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -225,6 +232,9 @@ const ProjectsPage = () => {
             );
           })}
         </div>
+      )}
+      {!loading && projects.length > 0 && (
+        <Pagination {...pagination} onPageChange={setPage} />
       )}
 
       {/* Project Modal */}

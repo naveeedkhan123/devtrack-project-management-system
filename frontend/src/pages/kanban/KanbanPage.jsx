@@ -11,12 +11,9 @@ import {
 } from '@dnd-kit/core';
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import {
-  Kanban as KanbanIcon,
   Plus,
   Search,
-  Filter,
   FolderKanban,
-  RotateCcw,
 } from 'lucide-react';
 import { taskService } from '../../services/taskService';
 import { projectService } from '../../services/projectService';
@@ -70,7 +67,7 @@ const KanbanPage = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const res = await projectService.getProjects();
+        const res = await projectService.getProjects({ limit: 100 });
         if (res?.data?.projects) {
           setProjects(res.data.projects);
         }
@@ -89,6 +86,7 @@ const KanbanPage = () => {
       if (selectedProject !== 'all') {
         params.project = selectedProject;
       }
+      params.limit = 100;
       const res = await taskService.getTasks(params);
       if (res?.data?.tasks) {
         setTasks(res.data.tasks);
@@ -243,6 +241,7 @@ const KanbanPage = () => {
         targetOrder = overTask.order || 0;
       }
     }
+    if (task.status === targetStatus && task.order === targetOrder) return;
 
     // Persist status change to backend
     const originalTasks = [...tasks];
@@ -251,6 +250,7 @@ const KanbanPage = () => {
         status: targetStatus,
         order: targetOrder,
       });
+      success(`Task moved to ${targetStatus.replace('_', ' ')}`);
     } catch (err) {
       // Revert optimistic update on failure
       error('Failed to sync Kanban update to server. Restoring previous state.');

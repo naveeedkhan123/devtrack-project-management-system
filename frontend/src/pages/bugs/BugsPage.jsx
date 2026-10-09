@@ -4,35 +4,34 @@ import {
   Bug,
   Plus,
   Search,
-  Filter,
   Trash2,
   Edit,
   ExternalLink,
-  AlertTriangle,
 } from 'lucide-react';
 import { bugService } from '../../services/bugService';
 import { projectService } from '../../services/projectService';
 import { userService } from '../../services/userService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import Pagination from '../../components/common/Pagination';
 import BugModal from '../../components/bugs/BugModal';
-import { formatDate } from '../../utils/dateUtils';
 import { getInitials } from '../../utils/formatters';
 
 const BugsPage = () => {
-  const { user, isManager, isAdmin } = useAuth();
+  const { isManager, isAdmin } = useAuth();
   const { success, error } = useToast();
 
   const [bugs, setBugs] = useState([]);
   const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
 
   // Filters
   const [search, setSearch] = useState('');
@@ -49,10 +48,14 @@ const BugsPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
+    setPage(1);
+  }, [search, projectFilter, statusFilter, severityFilter, priorityFilter, assigneeFilter]);
+
+  useEffect(() => {
     const loadMetadata = async () => {
       try {
         const [projRes, userRes] = await Promise.all([
-          projectService.getProjects(),
+          projectService.getProjects({ limit: 100 }),
           userService.getUsers(),
         ]);
         if (projRes?.data?.projects) setProjects(projRes.data.projects);
@@ -68,6 +71,8 @@ const BugsPage = () => {
     try {
       setLoading(true);
       const params = {};
+      params.page = page;
+      params.limit = 25;
       if (search) params.search = search;
       if (projectFilter !== 'all') params.project = projectFilter;
       if (statusFilter !== 'all') params.status = statusFilter;
@@ -78,6 +83,7 @@ const BugsPage = () => {
       const res = await bugService.getBugs(params);
       if (res?.data?.bugs) {
         setBugs(res.data.bugs);
+        setPagination(res.data.pagination || { page, limit: 25, total: res.data.total, pages: 1 });
       }
     } catch (err) {
       error(err.response?.data?.message || 'Failed to fetch bug reports');
@@ -91,6 +97,7 @@ const BugsPage = () => {
     severityFilter,
     priorityFilter,
     assigneeFilter,
+    page,
     error,
   ]);
 
@@ -342,6 +349,7 @@ const BugsPage = () => {
               </tbody>
             </table>
           </div>
+          <Pagination {...pagination} onPageChange={setPage} />
         </div>
       )}
 

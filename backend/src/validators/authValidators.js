@@ -17,12 +17,8 @@ const registerValidator = [
   body('password')
     .notEmpty()
     .withMessage('Password is required')
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long'),
-  body('role')
-    .optional()
-    .isIn(['admin', 'project_manager', 'developer'])
-    .withMessage('Invalid role provided'),
+    .isLength({ min: 12 })
+    .withMessage('Password must be at least 12 characters long'),
 ];
 
 const loginValidator = [
@@ -58,8 +54,8 @@ const changePasswordValidator = [
   body('newPassword')
     .notEmpty()
     .withMessage('New password is required')
-    .isLength({ min: 6 })
-    .withMessage('New password must be at least 6 characters long'),
+    .isLength({ min: 12 })
+    .withMessage('New password must be at least 12 characters long'),
 ];
 
 const forgotPasswordValidator = [
@@ -76,8 +72,8 @@ const resetPasswordValidator = [
   body('password')
     .notEmpty()
     .withMessage('New password is required')
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long'),
+    .isLength({ min: 12 })
+    .withMessage('Password must be at least 12 characters long'),
 ];
 
 module.exports = {

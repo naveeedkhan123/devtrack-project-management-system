@@ -1,22 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Activity,
-  Filter,
   FolderKanban,
   CheckSquare,
   Bug,
   MessageSquare,
   User,
-  Shield,
-  Layers,
 } from 'lucide-react';
 import { activityService } from '../../services/activityService';
 import { projectService } from '../../services/projectService';
-import Card from '../../components/common/Card';
 import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
 import { formatRelativeTime } from '../../utils/dateUtils';
-import { getInitials } from '../../utils/formatters';
 
 const ActivityPage = () => {
   const [activities, setActivities] = useState([]);
@@ -28,7 +23,7 @@ const ActivityPage = () => {
   useEffect(() => {
     const loadProjects = async () => {
       try {
-        const res = await projectService.getProjects();
+        const res = await projectService.getProjects({ limit: 100 });
         if (res?.data?.projects) setProjects(res.data.projects);
       } catch (err) {
         console.error('Failed to load projects for activity filter:', err);

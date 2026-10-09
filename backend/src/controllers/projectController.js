@@ -5,6 +5,15 @@ const User = require('../models/User');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 const { logActivity } = require('../services/activityService');
 const { createNotification } = require('../services/notificationService');
+const Comment = require('../models/Comment');
+const ActivityLog = require('../models/ActivityLog');
+const {
+  getPagination,
+  getPaginationMetadata,
+  isAllowedFilter,
+  isValidSearch,
+  escapeRegex,
+} = require('../utils/pagination');
 
 /**
  * @desc    Get all accessible projects
@@ -14,6 +23,13 @@ const { createNotification } = require('../services/notificationService');
 const getProjects = async (req, res, next) => {
   try {
     const { status, priority, search } = req.query;
+    const pagination = getPagination(req.query);
+    if (!pagination) return errorResponse(res, 'page and limit must be positive integers', 400);
+    if (!isAllowedFilter(status, ['planning', 'active', 'on_hold', 'completed']) ||
+        !isAllowedFilter(priority, ['low', 'medium', 'high', 'critical']) ||
+        !isValidSearch(search)) {
+      return errorResponse(res, 'Invalid project filters', 400);
+    }
     let query = {};
 
     // Developer can only see projects they are a member of or manage
@@ -34,18 +50,23 @@ const getProjects = async (req, res, next) => {
         ...(query.$and || []),
         {
           $or: [
-            { name: { $regex: search, $options: 'i' } },
-            { key: { $regex: search, $options: 'i' } },
-            { description: { $regex: search, $options: 'i' } },
+            { name: { $regex: escapeRegex(search), $options: 'i' } },
+            { key: { $regex: escapeRegex(search), $options: 'i' } },
+            { description: { $regex: escapeRegex(search), $options: 'i' } },
           ],
         },
       ];
     }
 
-    const projects = await Project.find(query)
-      .populate('manager', 'name email avatar')
-      .populate('members', 'name email avatar role')
-      .sort({ createdAt: -1 });
+    const [total, projects] = await Promise.all([
+      Project.countDocuments(query),
+      Project.find(query)
+        .populate('manager', 'name email avatar')
+        .populate('members', 'name email avatar role')
+        .sort({ createdAt: -1 })
+        .skip(pagination.skip)
+        .limit(pagination.limit),
+    ]);
 
     // Attach task & bug metrics to each project
     const projectsWithMetrics = await Promise.all(
@@ -70,7 +91,11 @@ const getProjects = async (req, res, next) => {
       })
     );
 
-    return successResponse(res, 'Projects fetched successfully', { projects: projectsWithMetrics });
+    return successResponse(res, 'Projects fetched successfully', {
+      projects: projectsWithMetrics,
+      total,
+      pagination: getPaginationMetadata(pagination, total),
+    });
   } catch (error) {
     next(error);
   }
@@ -259,12 +284,23 @@ const deleteProject = async (req, res, next) => {
       return errorResponse(res, 'Project not found', 404);
     }
 
-    // Cascade delete associated tasks and bugs
-    await Promise.all([
-      Task.deleteMany({ project: project._id }),
-      Bug.deleteMany({ project: project._id }),
-      Project.findByIdAndDelete(project._id),
+    const [tasks, bugs] = await Promise.all([
+      Task.find({ project: project._id }).select('_id'),
+      Bug.find({ project: project._id }).select('_id'),
     ]);
+    const taskIds = tasks.map((task) => task._id);
+    const bugIds = bugs.map((bug) => bug._id);
+
+    await Task.deleteMany({ project: project._id });
+    await Bug.deleteMany({ project: project._id });
+    await Comment.deleteMany({
+      $or: [
+        { entityType: 'task', entityId: { $in: taskIds } },
+        { entityType: 'bug', entityId: { $in: bugIds } },
+      ],
+    });
+    await ActivityLog.deleteMany({ project: project._id });
+    await Project.findByIdAndDelete(project._id);
 
     await logActivity({
       user: req.user._id,

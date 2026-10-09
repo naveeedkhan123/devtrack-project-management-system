@@ -42,7 +42,7 @@ const BugModal = ({
     const fetchData = async () => {
       try {
         const [projRes, userRes] = await Promise.all([
-          projectService.getProjects(),
+          projectService.getProjects({ limit: 100 }),
           userService.getUsers(),
         ]);
         if (projRes?.data?.projects) setProjects(projRes.data.projects);

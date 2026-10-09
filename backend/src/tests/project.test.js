@@ -4,7 +4,7 @@ const User = require('../models/User');
 const Project = require('../models/Project');
 
 describe('Project Management API Suite', () => {
-  let admin, adminToken, pm, pmToken;
+  let admin, pm, pmToken;
 
   beforeEach(async () => {
     admin = await User.create({
@@ -13,7 +13,6 @@ describe('Project Management API Suite', () => {
       password: 'Password123!',
       role: 'admin',
     });
-    adminToken = admin.getSignedJwtToken();
 
     pm = await User.create({
       name: 'PM User',

@@ -12,7 +12,10 @@
 
   body {
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    background: #f7f9fc;
+    letter-spacing: -0.01em;
   }
+  .dark body { background: #0B0F19; }
 
   /* Custom modern scrollbar */
   ::-webkit-scrollbar {
@@ -32,6 +35,14 @@
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(156, 163, 175, 0.7);
   }
+}
+
+@layer utilities {
+  .surface-gradient { background: linear-gradient(135deg, rgba(67,124,255,.10), rgba(99,102,241,.04) 48%, transparent 78%); }
+  .text-balance { text-wrap: balance; }
+  .hover-lift { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+  .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 18px 42px rgba(31, 64, 128, .12); }
+  .dark .hover-lift:hover { box-shadow: 0 18px 42px rgba(0, 0, 0, .28); }
 }
 
 /* Glassmorphism & Modern SaaS utilities */

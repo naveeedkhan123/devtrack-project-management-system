@@ -4,15 +4,10 @@ import {
   FolderKanban,
   CheckSquare,
   Bug,
-  Clock,
   TrendingUp,
-  AlertCircle,
-  CheckCircle2,
   Calendar,
   ArrowRight,
-  Plus,
   Activity,
-  Layers,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -66,7 +61,6 @@ const DashboardPage = () => {
   const charts = data?.charts || {};
   const recentActivity = data?.recentActivity || [];
   const upcomingTasks = data?.upcomingTasks || [];
-  const recentlyAssigned = data?.recentlyAssigned || [];
 
   // Colors for Recharts
   const STATUS_COLORS = {

@@ -10,7 +10,6 @@ import {
   Settings,
   CheckCheck,
   Trash2,
-  ExternalLink,
   ChevronDown,
   Layers,
 } from 'lucide-react';
@@ -29,6 +28,7 @@ const Navbar = ({ onMobileMenuToggle }) => {
 
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [globalSearch, setGlobalSearch] = useState('');
 
   const notifRef = useRef(null);
   const userMenuRef = useRef(null);
@@ -72,6 +72,19 @@ const Navbar = ({ onMobileMenuToggle }) => {
           <span>/</span>
           <span className="capitalize">{user?.role?.replace('_', ' ')} Workspace</span>
         </div>
+
+        <form
+          className="hidden md:flex items-center w-44 lg:w-64"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (globalSearch.trim()) navigate(`/projects?search=${encodeURIComponent(globalSearch.trim())}`);
+          }}
+        >
+          <label className="sr-only" htmlFor="global-workspace-search">Search workspace</label>
+          <div className="relative w-full">
+            <input id="global-workspace-search" value={globalSearch} onChange={(event) => setGlobalSearch(event.target.value)} placeholder="Search workspace…" className="w-full rounded-xl border border-gray-200 bg-gray-50/80 py-2 pl-3 pr-3 text-xs text-gray-800 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20 dark:border-gray-800 dark:bg-gray-900/70 dark:text-gray-100" />
+          </div>
+        </form>
       </div>
 
       {/* Right section: theme toggle, notifications, user avatar dropdown */}
@@ -201,6 +214,7 @@ const Navbar = ({ onMobileMenuToggle }) => {
               <img
                 src={user.avatar}
                 alt={user.name}
+                onError={(event) => { event.currentTarget.style.display = 'none'; }}
                 className="w-8 h-8 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
               />
             ) : (

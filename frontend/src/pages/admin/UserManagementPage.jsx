@@ -2,20 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Shield,
   Search,
-  Filter,
-  UserCheck,
-  UserX,
   Trash2,
-  Lock,
-  Mail,
-  Calendar,
 } from 'lucide-react';
 import { userService } from '../../services/userService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import Card from '../../components/common/Card';
-import Button from '../../components/common/Button';
-import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -73,7 +64,7 @@ const UserManagementPage = () => {
 
   const handleToggleStatus = async (userId) => {
     try {
-      const res = await userService.toggleUserStatus(userId);
+      await userService.toggleUserStatus(userId);
       success(`User account status updated`);
       fetchUsers();
     } catch (err) {
@@ -184,6 +175,7 @@ const UserManagementPage = () => {
                             <img
                               src={item.avatar}
                               alt={item.name}
+                              onError={(event) => { event.currentTarget.style.display = 'none'; }}
                               className="w-8 h-8 rounded-lg object-cover border border-gray-200 dark:border-gray-700"
                             />
                           ) : (

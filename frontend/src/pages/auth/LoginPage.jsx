@@ -84,7 +84,7 @@ const LoginPage = () => {
           <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
-              onClick={() => fillDemoAccount('admin@devtrack.io', 'Admin123!')}
+              onClick={() => fillDemoAccount('admin@devtrack.io', 'Admin123!Strong')}
               className="flex items-center justify-center gap-1.5 p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-800 dark:text-gray-200 hover:border-brand-500 transition-colors"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-rose-500" />
@@ -92,7 +92,7 @@ const LoginPage = () => {
             </button>
             <button
               type="button"
-              onClick={() => fillDemoAccount('pm@devtrack.io', 'Pm123!')}
+              onClick={() => fillDemoAccount('pm@devtrack.io', 'Pm123!Strong')}
               className="flex items-center justify-center gap-1.5 p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-800 dark:text-gray-200 hover:border-brand-500 transition-colors"
             >
               <UserCheck className="w-3.5 h-3.5 text-brand-500" />
@@ -100,7 +100,7 @@ const LoginPage = () => {
             </button>
             <button
               type="button"
-              onClick={() => fillDemoAccount('dev1@devtrack.io', 'Dev123!')}
+              onClick={() => fillDemoAccount('dev1@devtrack.io', 'Dev123!Strong')}
               className="flex items-center justify-center gap-1.5 p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-800 dark:text-gray-200 hover:border-brand-500 transition-colors"
             >
               <Code className="w-3.5 h-3.5 text-emerald-500" />

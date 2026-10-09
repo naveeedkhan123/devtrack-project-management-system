@@ -103,6 +103,20 @@ const restoreDatabaseSnapshot = async () => {
   }
 
   try {
+    const existingCounts = await Promise.all([
+      User.countDocuments({}),
+      Project.countDocuments({}),
+      Task.countDocuments({}),
+      Bug.countDocuments({}),
+      Comment.countDocuments({}),
+      Notification.countDocuments({}),
+      ActivityLog.countDocuments({}),
+    ]);
+    if (existingCounts.some((count) => count > 0)) {
+      logger.info('[Persistence] Skipping snapshot restore because MongoDB already contains data.');
+      return false;
+    }
+
     const fileContent = fs.readFileSync(storeFilePath, 'utf8');
     if (!fileContent || fileContent.trim() === '') {
       return false;
@@ -118,18 +132,7 @@ const restoreDatabaseSnapshot = async () => {
 
     logger.info(`[Persistence] Restoring database from snapshot (${snapshot.timestamp})...`);
 
-    // Clean existing collections to avoid duplicates
-    await Promise.all([
-      User.deleteMany({}),
-      Project.deleteMany({}),
-      Task.deleteMany({}),
-      Bug.deleteMany({}),
-      Comment.deleteMany({}),
-      Notification.deleteMany({}),
-      ActivityLog.deleteMany({}),
-    ]);
-
-    // Restore collections
+    // Restore only into an empty database; existing MongoDB records are never removed.
     if (data.users?.length) await User.insertMany(data.users, { ordered: false });
     if (data.projects?.length) await Project.insertMany(data.projects, { ordered: false });
     if (data.tasks?.length) await Task.insertMany(data.tasks, { ordered: false });

@@ -1,9 +1,11 @@
 const Comment = require('../models/Comment');
 const Task = require('../models/Task');
 const Bug = require('../models/Bug');
+const Project = require('../models/Project');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 const { logActivity } = require('../services/activityService');
 const { createNotification } = require('../services/notificationService');
+const { canAccessProject } = require('../services/projectAccess');
 
 /**
  * @desc    Get comments for task or bug
@@ -16,6 +18,15 @@ const getComments = async (req, res, next) => {
 
     if (!['task', 'bug'].includes(entityType)) {
       return errorResponse(res, 'Invalid entity type', 400);
+    }
+
+    const target = entityType === 'task'
+      ? await Task.findById(entityId).select('project')
+      : await Bug.findById(entityId).select('project');
+    if (!target) return errorResponse(res, `${entityType === 'task' ? 'Task' : 'Bug'} not found`, 404);
+    const project = await Project.findById(target.project).select('members manager');
+    if (!canAccessProject(project, req.user)) {
+      return errorResponse(res, 'Not authorized to view these comments', 403);
     }
 
     const comments = await Comment.find({ entityType, entityId })
@@ -58,7 +69,6 @@ const createComment = async (req, res, next) => {
       targetLink = `/tasks/${targetDoc._id}`;
       recipientId = targetDoc.assignedTo;
       projectId = targetDoc.project;
-      await Task.findByIdAndUpdate(entityId, { $inc: { commentsCount: 1 } });
     } else {
       targetDoc = await Bug.findById(entityId);
       if (!targetDoc) return errorResponse(res, 'Bug not found', 404);
@@ -66,7 +76,11 @@ const createComment = async (req, res, next) => {
       targetLink = `/bugs/${targetDoc._id}`;
       recipientId = targetDoc.assignedTo || targetDoc.reportedBy;
       projectId = targetDoc.project;
-      await Bug.findByIdAndUpdate(entityId, { $inc: { commentsCount: 1 } });
+    }
+
+    const project = await Project.findById(projectId).select('members manager');
+    if (!canAccessProject(project, req.user)) {
+      return errorResponse(res, 'Not authorized to comment on this item', 403);
     }
 
     const comment = await Comment.create({
@@ -75,6 +89,11 @@ const createComment = async (req, res, next) => {
       entityType,
       entityId,
     });
+    if (entityType === 'task') {
+      await Task.findByIdAndUpdate(entityId, { $inc: { commentsCount: 1 } });
+    } else {
+      await Bug.findByIdAndUpdate(entityId, { $inc: { commentsCount: 1 } });
+    }
 
     await comment.populate('author', 'name email avatar role');
 

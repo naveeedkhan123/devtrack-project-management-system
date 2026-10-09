@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Layers, Mail, Lock, User, ArrowRight, Briefcase } from 'lucide-react';
+import { Layers, Mail, Lock, User, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import Button from '../../components/common/Button';
@@ -39,8 +39,8 @@ const RegisterPage = () => {
     }
     if (!formData.password) {
       errs.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      errs.password = 'Password must be at least 6 characters';
+    } else if (formData.password.length < 12) {
+      errs.password = 'Password must be at least 12 characters';
     }
     if (formData.password !== formData.confirmPassword) {
       errs.confirmPassword = 'Passwords do not match';
@@ -133,7 +133,7 @@ const RegisterPage = () => {
               type="password"
               name="password"
               icon={Lock}
-              placeholder="At least 6 characters"
+              placeholder="At least 12 characters"
               value={formData.password}
               onChange={handleChange}
               error={errors.password}

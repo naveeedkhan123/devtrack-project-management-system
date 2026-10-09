@@ -19,6 +19,7 @@ const activityRoutes = require('./routes/activityRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 
 const app = express();
+const allowedOrigins = new Set(config.clientUrls);
 
 // Security headers
 app.use(
@@ -31,17 +32,10 @@ app.use(
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, or Postman)
       if (!origin) return callback(null, true);
-      // In development or local preview, allow all localhost ports
-      if (
-        origin.includes('localhost') ||
-        origin.includes('127.0.0.1') ||
-        origin === config.clientUrl
-      ) {
-        return callback(null, true);
-      }
-      return callback(null, true); // Permissive for easy dev/demo evaluation
+      const isLocalDevelopmentOrigin = config.nodeEnv !== 'production' &&
+        /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+      return callback(null, isLocalDevelopmentOrigin || allowedOrigins.has(origin));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -55,19 +49,21 @@ if (config.nodeEnv === 'development') {
 }
 
 // Body parsers
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
 // Static assets (uploaded profile images)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
+  const connected = require('mongoose').connection.readyState === 1;
   return successResponse(res, 'DevTrack API is online and operational', {
-    status: 'healthy',
+    status: connected ? 'healthy' : 'unavailable',
+    database: connected ? 'connected' : 'disconnected',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-  });
+  }, connected ? 200 : 503);
 });
 
 app.get('/', (req, res) => {

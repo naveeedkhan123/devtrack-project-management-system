@@ -3,6 +3,15 @@ const Project = require('../models/Project');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 const { logActivity } = require('../services/activityService');
 const { createNotification } = require('../services/notificationService');
+const { getAccessibleProjectIds, canAccessProject } = require('../services/projectAccess');
+const Comment = require('../models/Comment');
+const {
+  getPagination,
+  getPaginationMetadata,
+  isAllowedFilter,
+  isValidSearch,
+  escapeRegex,
+} = require('../utils/pagination');
 
 /**
  * @desc    Get all tasks with filters
@@ -11,7 +20,17 @@ const { createNotification } = require('../services/notificationService');
  */
 const getTasks = async (req, res, next) => {
   try {
-    const { project, status, priority, assignedTo, search } = req.query;
+    const { project, status, priority, assignedTo, search, overdue } = req.query;
+    const pagination = getPagination(req.query);
+    if (!pagination) return errorResponse(res, 'page and limit must be positive integers', 400);
+    if (!isAllowedFilter(status, ['todo', 'in_progress', 'review', 'completed']) ||
+        !isAllowedFilter(priority, ['low', 'medium', 'high', 'critical']) ||
+        (project !== undefined && project !== 'all' && typeof project !== 'string') ||
+        (assignedTo !== undefined && assignedTo !== 'all' &&
+          assignedTo !== 'unassigned' && typeof assignedTo !== 'string') ||
+        !isValidSearch(search)) {
+      return errorResponse(res, 'Invalid task filters', 400);
+    }
     let query = {};
 
     if (project && project !== 'all') {
@@ -34,14 +53,25 @@ const getTasks = async (req, res, next) => {
       }
     }
 
-    // Developer role restriction if no specific project specified
-    if (req.user.role === 'developer' && !project) {
-      // Find all projects developer is part of
-      const userProjects = await Project.find({
-        $or: [{ members: req.user._id }, { manager: req.user._id }],
-      }).select('_id');
-      const projectIds = userProjects.map((p) => p._id);
-      query.project = { $in: projectIds };
+    if (overdue === 'true') {
+      query.dueDate = { $lt: new Date() };
+      const statusConditions = [{ status: { $ne: 'completed' } }];
+      if (query.status) statusConditions.push({ status: query.status });
+      query.$and = [...(query.$and || []), ...statusConditions];
+      delete query.status;
+    } else if (overdue && overdue !== 'false') {
+      return errorResponse(res, 'overdue must be true or false', 400);
+    }
+
+    if (req.user.role === 'developer') {
+      const accessibleProjectIds = await getAccessibleProjectIds(req.user);
+      if (project && project !== 'all' &&
+        !accessibleProjectIds.some((id) => id.toString() === project)) {
+        return errorResponse(res, 'Not authorized to view tasks in this project', 403);
+      }
+      query.project = project && project !== 'all'
+        ? project
+        : { $in: accessibleProjectIds };
     }
 
     if (search) {
@@ -49,21 +79,30 @@ const getTasks = async (req, res, next) => {
         ...(query.$and || []),
         {
           $or: [
-            { title: { $regex: search, $options: 'i' } },
-            { description: { $regex: search, $options: 'i' } },
-            { labels: { $regex: search, $options: 'i' } },
+            { title: { $regex: escapeRegex(search), $options: 'i' } },
+            { description: { $regex: escapeRegex(search), $options: 'i' } },
+            { labels: { $regex: escapeRegex(search), $options: 'i' } },
           ],
         },
       ];
     }
 
-    const tasks = await Task.find(query)
-      .populate('project', 'name key status')
-      .populate('assignedTo', 'name email avatar role')
-      .populate('createdBy', 'name email')
-      .sort({ order: 1, createdAt: -1 });
+    const [total, tasks] = await Promise.all([
+      Task.countDocuments(query),
+      Task.find(query)
+        .populate('project', 'name key status')
+        .populate('assignedTo', 'name email avatar role')
+        .populate('createdBy', 'name email')
+        .sort({ order: 1, createdAt: -1 })
+        .skip(pagination.skip)
+        .limit(pagination.limit),
+    ]);
 
-    return successResponse(res, 'Tasks fetched successfully', { tasks, total: tasks.length });
+    return successResponse(res, 'Tasks fetched successfully', {
+      tasks,
+      total,
+      pagination: getPaginationMetadata(pagination, total),
+    });
   } catch (error) {
     next(error);
   }
@@ -83,6 +122,9 @@ const getTask = async (req, res, next) => {
 
     if (!task) {
       return errorResponse(res, 'Task not found', 404);
+    }
+    if (!canAccessProject(task.project, req.user)) {
+      return errorResponse(res, 'Not authorized to view this task', 403);
     }
 
     return successResponse(res, 'Task fetched successfully', { task });
@@ -167,6 +209,10 @@ const updateTask = async (req, res, next) => {
     if (!task) {
       return errorResponse(res, 'Task not found', 404);
     }
+    const projectDoc = await Project.findById(task.project).select('members manager');
+    if (!canAccessProject(projectDoc, req.user)) {
+      return errorResponse(res, 'Not authorized to update this task', 403);
+    }
 
     const { title, description, priority, status, assignedTo, dueDate, labels, order } = req.body;
 
@@ -235,6 +281,10 @@ const updateTaskStatus = async (req, res, next) => {
     if (!task) {
       return errorResponse(res, 'Task not found', 404);
     }
+    const projectDoc = await Project.findById(task.project).select('members manager');
+    if (!canAccessProject(projectDoc, req.user)) {
+      return errorResponse(res, 'Not authorized to update this task', 403);
+    }
 
     const previousStatus = task.status;
     task.status = status;
@@ -288,7 +338,12 @@ const deleteTask = async (req, res, next) => {
     if (!task) {
       return errorResponse(res, 'Task not found', 404);
     }
+    const projectDoc = await Project.findById(task.project).select('members manager');
+    if (!canAccessProject(projectDoc, req.user)) {
+      return errorResponse(res, 'Not authorized to delete this task', 403);
+    }
 
+    await Comment.deleteMany({ entityType: 'task', entityId: task._id });
     await Task.findByIdAndDelete(req.params.id);
 
     await logActivity({

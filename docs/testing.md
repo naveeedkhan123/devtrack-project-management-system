@@ -1,104 +1,33 @@
-# DevTrack Testing Strategy & Verification Guide
+# DevTrack Testing Guide
 
-## 1. Testing Philosophy & Test Pyramid
+## Test coverage
 
-DevTrack adopts a comprehensive multi-layered automated testing strategy adhering to the classic Testing Pyramid principles:
-1. **Unit & Component Testing:** Fast, isolated testing of pure functions, utility modules, and atomic UI components without network overhead.
-2. **Integration Testing:** Verification of HTTP API endpoints, request validators, database persistence, and cross-component React contexts.
-3. **End-to-End User Flow Simulation:** End-to-end verification of authentication lifecycles, role-based access restrictions, and drag-and-drop state modifications.
+Backend integration tests use Jest, Supertest, and `mongodb-memory-server`. The 7 suites cover authentication and password validation, role and project-scoped authorization, comments, project APIs, task persistence and overdue/pagination behavior, bug workflows, and safe snapshot restoration.
 
-```
-       /\
-      /  \    E2E & Flow Tests (Role routing, Auth lifecycle)
-     /----\
-    / Inte- \   Integration Tests (Supertest API endpoints + MongoMemoryServer)
-   /  gration\
-  /------------\
- /  Unit/Comp   \ Component & Unit Tests (Vitest + RTL + Jest)
-/----------------\
-```
+Frontend tests use Vitest, jsdom, and React Testing Library to exercise login views, shared UI components, Kanban cards, and task/bug forms. These are component and interaction tests; the repository does not currently include browser-driven end-to-end tests.
 
----
+## Run the checks
 
-## 2. Backend Automated Test Suite (Jest & Supertest)
-
-Backend tests run in an isolated in-memory MongoDB environment, executing without dependencies on external database daemons or network infrastructure.
-
-### 2.1 Test Suites Breakdown
-
-| Test Suite | File Location | Tests | Focus Areas |
-| :--- | :--- | :---: | :--- |
-| **Authentication & Profile** | `backend/tests/auth.test.js` | 4 | User registration, JWT issuing, password verification, duplicate email rejection, `/auth/me` identity retrieval. |
-| **RBAC & Authorization** | `backend/tests/rbac.test.js` | 3 | Role enforcement (`admin`, `project_manager`, `developer`), `403 Forbidden` verification on privileged endpoints. |
-| **Project Management** | `backend/tests/project.test.js` | 3 | Project creation, unique key collision handling, member roster updates, project deletion. |
-| **Task Management** | `backend/tests/task.test.js` | 3 | Task lifecycle, assignee population, Kanban status lane transitions (`/status`). |
-| **Bug & Defect Tracking** | `backend/tests/bug.test.js` | 2 | Defect creation with reproduction steps, severity filtering, status resolution. |
-
-**Total Backend Tests:** **15 / 15 Passed (100%)**
-
-### 2.2 Running Backend Tests
-Execute the test runner from the `backend/` directory:
+Run from the repository root:
 
 ```bash
-cd backend
-npm test
+npm --prefix backend run lint
+npm --prefix backend test
+npm --prefix frontend run lint
+npm --prefix frontend test
+npm --prefix frontend run build
 ```
 
-To run with coverage reporting:
-```bash
-npm test -- --coverage
-```
-
-To run a specific test suite:
-```bash
-npx jest tests/rbac.test.js
-```
-
----
-
-## 3. Frontend Automated Test Suite (Vitest & React Testing Library)
-
-Frontend tests utilize Vitest configured with `jsdom`, simulating browser DOM APIs, user interaction events, and simulated network mocks.
-
-### 3.1 Test Suites Breakdown
-
-| Test Suite | File Location | Tests | Focus Areas |
-| :--- | :--- | :---: | :--- |
-| **Authentication Views** | `frontend/src/tests/LoginPage.test.jsx` | 3 | Form rendering, Quick-fill demo account buttons (Admin/PM/Dev), login submission handler. |
-| **Common UI Components** | `frontend/src/tests/CommonComponents.test.jsx` | 3 | Button variants & loading spinners, Badge color tokens, Modal open/close behavior. |
-| **Kanban Board** | `frontend/src/tests/KanbanCard.test.jsx` | 2 | Card rendering, priority badges, drag-and-drop handles. |
-| **Task & Bug Modals** | `frontend/src/tests/TaskAndBugModals.test.jsx` | 2 | Form controls, accessibility `label` to `input` linking, submission payloads. |
-
-**Total Frontend Tests:** **10 / 10 Passed (100%)**
-
-### 3.2 Running Frontend Tests
-Execute the test runner from the `frontend/` directory:
+Backend coverage can be measured with:
 
 ```bash
-cd frontend
-npm test
+npm --prefix backend run test:coverage
 ```
 
-To run in interactive UI mode:
-```bash
-npx vitest --ui
-```
+CI runs backend and frontend lint and tests on pushes and pull requests, and builds the frontend.
 
----
+## Latest local verification
 
-## 4. Verification & Production Build Pipeline
+The latest verified backend run passed **26 tests across 7 suites**. Backend coverage was **50.88% statements, 29.30% branches, 37.39% functions, and 53.01% lines**. Coverage is not collected for the frontend. The latest frontend run passed **10 tests across 4 suites**, and the production build completed successfully without test failures.
 
-Prior to production deployments or merging pull requests, the following pipeline ensures zero regressions:
-
-```bash
-# 1. Run all backend tests
-cd backend && npm test -- --runInBand
-
-# 2. Run all frontend tests
-cd ../frontend && npm test
-
-# 3. Compile frontend production bundle
-npm run build
-```
-
-Expected result: Zero linting errors, 25/25 automated tests passed, and optimized production bundle generated in `frontend/dist/`.
+Dependency audit was run separately from test status. Production dependencies had no reported vulnerabilities. The full audit reported 7 development-dependency advisories for the frontend (5 high and 2 moderate, primarily Tailwind CSS 3's build chain) and 22 for the backend (3 high and 19 moderate, in development/test tooling). These are not included in the shipped application bundle; re-run `npm audit` in each package before deployment and schedule compatible toolchain upgrades.

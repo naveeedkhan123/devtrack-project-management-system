@@ -1,7 +1,5 @@
 const request = require('supertest');
 const app = require('../app');
-const User = require('../models/User');
-
 describe('Authentication API Suite', () => {
   const testUser = {
     name: 'Test Engineer',
@@ -19,6 +17,25 @@ describe('Authentication API Suite', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data.token).toBeDefined();
     expect(res.body.data.user.email).toBe(testUser.email.toLowerCase());
+  });
+
+  test('POST /api/auth/register - Ignores a client-supplied administrator role', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({ ...testUser, email: 'forged-admin@devtrack.io', role: 'admin' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.user.role).toBe('developer');
+  });
+
+  test('POST /api/auth/register - Does not echo invalid passwords in validation errors', async () => {
+    const password = 'x';
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({ name: 'Test User', email: 'invalid@devtrack.io', password });
+
+    expect(res.status).toBe(422);
+    expect(JSON.stringify(res.body)).not.toContain(password);
   });
 
   test('POST /api/auth/register - Reject registration with existing email', async () => {
@@ -78,5 +95,12 @@ describe('Authentication API Suite', () => {
     const res = await request(app).get('/api/auth/me');
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
+  });
+
+  test('GET /health - Reports the MongoDB connection state', async () => {
+    const res = await request(app).get('/health');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.database).toBe('connected');
   });
 });

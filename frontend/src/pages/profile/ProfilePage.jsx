@@ -1,12 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  User,
   Mail,
-  Shield,
   Calendar,
   Lock,
   Save,
-  CheckCircle,
   Image,
   Upload,
 } from 'lucide-react';
@@ -121,8 +118,8 @@ const ProfilePage = () => {
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
-    if (passwords.newPassword.length < 6) {
-      error('New password must be at least 6 characters');
+    if (passwords.newPassword.length < 12) {
+      error('New password must be at least 12 characters');
       return;
     }
     if (passwords.newPassword !== passwords.confirmNewPassword) {

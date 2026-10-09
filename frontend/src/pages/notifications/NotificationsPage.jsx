@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Bell, CheckCheck, Trash2, ExternalLink, Filter } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, CheckCheck, Trash2 } from 'lucide-react';
 import { useNotifications } from '../../context/NotificationContext';
-import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
 import { formatRelativeTime } from '../../utils/dateUtils';

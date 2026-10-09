@@ -75,5 +75,6 @@ const TaskSchema = new mongoose.Schema(
 
 // Compound index for efficient kanban column retrieval & sorting
 TaskSchema.index({ project: 1, status: 1, order: 1 });
+TaskSchema.index({ project: 1, dueDate: 1, status: 1 });
 
 module.exports = mongoose.model('Task', TaskSchema);

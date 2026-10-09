@@ -23,8 +23,8 @@ const ResetPasswordPage = () => {
       setErrorText('Reset token is required');
       return;
     }
-    if (password.length < 6) {
-      setErrorText('Password must be at least 6 characters');
+    if (password.length < 12) {
+      setErrorText('Password must be at least 12 characters');
       return;
     }
     if (password !== confirmPassword) {
@@ -60,7 +60,7 @@ const ResetPasswordPage = () => {
             Create new password
           </h1>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Choose a strong password with at least 6 characters
+            Choose a strong password with at least 12 characters
           </p>
         </div>
 

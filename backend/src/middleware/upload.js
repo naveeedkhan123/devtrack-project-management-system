@@ -89,7 +89,30 @@ const uploadProfileImageMiddleware = (req, res, next) => {
         null;
     }
 
-    next();
+    if (!req.file) return next();
+
+    fs.readFile(req.file.path, (readErr, contents) => {
+      if (readErr) {
+        return fs.unlink(req.file.path, (unlinkErr) => {
+          if (unlinkErr) return next(unlinkErr);
+          return next(readErr);
+        });
+      }
+      const isPng = contents.length >= 8 &&
+        contents.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+      const isJpeg = contents.length >= 3 &&
+        contents[0] === 0xff && contents[1] === 0xd8 && contents[2] === 0xff;
+      const isWebp = contents.length >= 12 &&
+        contents.toString('ascii', 0, 4) === 'RIFF' &&
+        contents.toString('ascii', 8, 12) === 'WEBP';
+
+      if (isPng || isJpeg || isWebp) return next();
+
+      fs.unlink(req.file.path, (unlinkErr) => {
+        if (unlinkErr) return next(unlinkErr);
+        return errorResponse(res, 'The uploaded file is not a valid JPG, PNG, or WEBP image.', 400);
+      });
+    });
   });
 };
 

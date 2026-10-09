@@ -78,4 +78,42 @@ describe('Task and Kanban API Suite', () => {
     expect(res.body.data.task.status).toBe('in_progress');
     expect(res.body.data.task.order).toBe(1);
   });
+
+  test('GET /api/tasks - Supports pagination and overdue filtering', async () => {
+    await Task.create([
+      {
+        title: 'Overdue open task',
+        project: project._id,
+        createdBy: pm._id,
+        dueDate: new Date(Date.now() - 86400000),
+      },
+      {
+        title: 'Overdue completed task',
+        project: project._id,
+        createdBy: pm._id,
+        dueDate: new Date(Date.now() - 86400000),
+        status: 'completed',
+      },
+      {
+        title: 'Upcoming task',
+        project: project._id,
+        createdBy: pm._id,
+        dueDate: new Date(Date.now() + 86400000),
+      },
+    ]);
+
+    const res = await request(app)
+      .get(`/api/tasks?project=${project._id}&overdue=true&page=1&limit=1`)
+      .set('Authorization', `Bearer ${pmToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.tasks).toHaveLength(1);
+    expect(res.body.data.tasks[0].title).toBe('Overdue open task');
+    expect(res.body.data.pagination).toEqual({
+      page: 1,
+      limit: 1,
+      total: 1,
+      pages: 1,
+    });
+  });
 });

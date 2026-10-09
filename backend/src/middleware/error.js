@@ -4,7 +4,7 @@ const { errorResponse } = require('../utils/apiResponse');
 /**
  * Centralized error handling middleware
  */
-const errorHandler = (err, req, res, next) => {
+const errorHandler = (err, req, res, _next) => {
   let error = { ...err };
   error.message = err.message;
 
@@ -41,7 +41,9 @@ const errorHandler = (err, req, res, next) => {
   }
 
   const statusCode = error.statusCode || err.statusCode || 500;
-  const message = error.message || 'Internal Server Error';
+  const message = statusCode >= 500 && process.env.NODE_ENV === 'production'
+    ? 'An unexpected server error occurred'
+    : error.message || 'Internal Server Error';
 
   return errorResponse(res, message, statusCode);
 };

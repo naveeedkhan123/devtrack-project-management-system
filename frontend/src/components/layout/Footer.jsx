@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layers, Github, Heart } from 'lucide-react';
+import { Layers, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Footer = () => {

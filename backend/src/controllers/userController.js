@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Task = require('../models/Task');
 const Bug = require('../models/Bug');
 const Project = require('../models/Project');
+const Notification = require('../models/Notification');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 const { logActivity } = require('../services/activityService');
 
@@ -142,6 +143,13 @@ const toggleUserStatus = async (req, res, next) => {
       return errorResponse(res, 'You cannot deactivate your own account', 400);
     }
 
+    if (user.role === 'admin' && user.status === 'active') {
+      const activeAdmins = await User.countDocuments({ role: 'admin', status: 'active' });
+      if (activeAdmins <= 1) {
+        return errorResponse(res, 'Cannot deactivate the last active Admin account', 400);
+      }
+    }
+
     user.status = user.status === 'active' ? 'inactive' : 'active';
     await user.save();
 
@@ -175,6 +183,25 @@ const deleteUser = async (req, res, next) => {
       return errorResponse(res, 'You cannot delete your own account', 400);
     }
 
+    if (user.role === 'admin' && user.status === 'active') {
+      const activeAdmins = await User.countDocuments({ role: 'admin', status: 'active' });
+      if (activeAdmins <= 1) {
+        return errorResponse(res, 'Cannot delete the last active Admin account', 400);
+      }
+    }
+
+    const managedProjects = await Project.countDocuments({ manager: user._id });
+    if (managedProjects > 0) {
+      return errorResponse(res, 'Transfer project management before deleting this user', 400);
+    }
+
+    await Promise.all([
+      Project.updateMany({ members: user._id }, { $pull: { members: user._id } }),
+      Task.updateMany({ assignedTo: user._id }, { $set: { assignedTo: null } }),
+      Bug.updateMany({ assignedTo: user._id }, { $set: { assignedTo: null } }),
+      Notification.deleteMany({ recipient: user._id }),
+      Notification.updateMany({ sender: user._id }, { $set: { sender: null } }),
+    ]);
     await User.findByIdAndDelete(req.params.id);
 
     await logActivity({

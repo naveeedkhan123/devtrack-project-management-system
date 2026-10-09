@@ -1,13 +1,8 @@
 import React, { useState } from 'react';
 import {
-  Settings,
   Sun,
   Moon,
-  Bell,
-  Mail,
-  Shield,
   Save,
-  Check,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';

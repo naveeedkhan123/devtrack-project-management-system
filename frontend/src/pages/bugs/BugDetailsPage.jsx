@@ -2,10 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
-  Bug,
   FolderKanban,
-  User,
-  Clock,
   Server,
   Edit,
   Trash2,
@@ -29,7 +26,7 @@ import { formatStatus, getInitials } from '../../utils/formatters';
 const BugDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, isManager, isAdmin } = useAuth();
+  const { isManager, isAdmin } = useAuth();
   const { success, error } = useToast();
 
   const [bug, setBug] = useState(null);

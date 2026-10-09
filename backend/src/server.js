@@ -14,32 +14,24 @@ const startServer = async () => {
     // Connect to database
     await connectDB();
 
-    // Initialize automatic Mongoose persistence hooks
-    initPersistence();
+    if (config.nodeEnv !== 'production') {
+      if (config.enableLocalSnapshots) {
+        initPersistence();
+        await restoreDatabaseSnapshot();
+      }
 
-    // Attempt to restore persistent database state from disk
-    let restored = false;
-    try {
-      restored = await restoreDatabaseSnapshot();
-    } catch (restoreErr) {
-      logger.warn('[Persistence] Snapshot restore warning:', restoreErr.message);
-    }
-
-    // Check if initial seed is needed (only if database is empty and no snapshot was restored)
-    try {
-      const userCount = await User.countDocuments();
-      if (userCount === 0) {
-        logger.info('Database is empty. Auto-seeding initial demo data...');
+      // Demo accounts are only created in development; production data is never seeded at startup.
+      try {
+        const userCount = await User.countDocuments();
+        logger.info(userCount === 0 ? 'Database is empty. Seeding demo data...' : 'Reconciling additive demo catalog...');
         const { seedDatabase } = require('./seeds/seedData');
         await seedDatabase();
-        // Immediately persist initial seed snapshot
-        await saveDatabaseSnapshot();
-      } else if (!restored) {
-        // Persist existing documents if any
-        await saveDatabaseSnapshot();
+        if (config.enableLocalSnapshots) {
+          await saveDatabaseSnapshot();
+        }
+      } catch (seedErr) {
+        logger.warn('Seed check warning:', seedErr.message);
       }
-    } catch (seedErr) {
-      logger.warn('Seed check warning:', seedErr.message);
     }
 
     // Start server with fallback if port is in use (e.g. macOS AirPlay on port 5000)
@@ -74,11 +66,9 @@ const startServer = async () => {
     const server = await listenOnPort(config.port);
 
     const shutdown = async (signal) => {
-      logger.info(`${signal} received. Flushing database snapshot & shutting down...`);
-      try {
+      logger.info(`${signal} received. Shutting down...`);
+      if (config.nodeEnv !== 'production' && config.enableLocalSnapshots) {
         await saveDatabaseSnapshot();
-      } catch (flushErr) {
-        logger.error('Error saving snapshot during shutdown:', flushErr.message);
       }
       server.close(async () => {
         await disconnectDB();

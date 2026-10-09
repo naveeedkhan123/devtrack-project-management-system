@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MessageSquare, Send, Trash2, CornerDownRight } from 'lucide-react';
+import { MessageSquare, Send, Trash2 } from 'lucide-react';
 import { commentService } from '../../services/commentService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -25,11 +25,11 @@ const CommentThread = ({ entityType, entityId }) => {
         setComments(res.data.comments);
       }
     } catch (err) {
-      console.error('Failed to load comments:', err);
+      error(err.response?.data?.message || 'Failed to load comments');
     } finally {
       setLoading(false);
     }
-  }, [entityType, entityId]);
+  }, [entityType, entityId, error]);
 
   useEffect(() => {
     fetchComments();
@@ -77,7 +77,11 @@ const CommentThread = ({ entityType, entityId }) => {
 
       {/* Comment List */}
       <div className="space-y-3">
-        {comments.length === 0 ? (
+        {loading ? (
+          <p role="status" className="p-4 text-center text-xs text-gray-400">
+            Loading comments...
+          </p>
+        ) : comments.length === 0 ? (
           <div className="p-4 rounded-xl border border-dashed border-gray-200 dark:border-gray-800 text-center text-xs text-gray-400">
             No comments yet. Start the technical discussion below.
           </div>

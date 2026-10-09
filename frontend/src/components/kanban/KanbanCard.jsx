@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Calendar, MessageSquare, AlertCircle, Clock } from 'lucide-react';
+import { Calendar, MessageSquare } from 'lucide-react';
 import Badge from '../common/Badge';
 import { formatDate, isOverdue } from '../../utils/dateUtils';
 import { getInitials } from '../../utils/formatters';

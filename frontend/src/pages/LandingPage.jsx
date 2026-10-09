@@ -1,18 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Layers,
   Kanban,
   Bug,
   BarChart3,
-  ShieldCheck,
   CheckCircle2,
   ArrowRight,
-  Zap,
-  Users2,
-  Clock,
   Sparkles,
-  GitPullRequest,
   Lock,
 } from 'lucide-react';
 import PublicNavbar from '../components/layout/PublicNavbar';
@@ -67,7 +61,7 @@ const LandingPage = () => {
                 Instant Demo Access (Seeded):
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold">
-                Password: Admin123! / Pm123! / Dev123!
+                Password: Admin123!Strong / Pm123!Strong / Dev123!Strong
               </span>
             </div>
             <div className="grid grid-cols-3 gap-2 text-xs">

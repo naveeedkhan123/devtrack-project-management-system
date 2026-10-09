@@ -1,12 +1,8 @@
 const request = require('supertest');
 const app = require('../app');
 const User = require('../models/User');
-const Task = require('../models/Task');
 const Project = require('../models/Project');
-const {
-  saveDatabaseSnapshot,
-  restoreDatabaseSnapshot,
-} = require('../services/persistenceService');
+const { restoreDatabaseSnapshot } = require('../services/persistenceService');
 
 describe('Data Persistence & Integrity Suite', () => {
   let authToken;
@@ -14,18 +10,14 @@ describe('Data Persistence & Integrity Suite', () => {
   let testProjectId;
 
   beforeEach(async () => {
-    // Create an authenticated developer user
-    const userRes = await request(app)
-      .post('/api/auth/register')
-      .send({
-        name: 'Persistent Dev',
-        email: `dev_${Date.now()}@devtrack.io`,
-        password: 'Password123!',
-        role: 'developer',
-      });
-
-    authToken = userRes.body.data.token;
-    testUserId = userRes.body.data.user.id;
+    const user = await User.create({
+      name: 'Persistent Dev',
+      email: `dev_${Date.now()}@devtrack.io`,
+      password: 'Password123!',
+      role: 'project_manager',
+    });
+    authToken = user.getSignedJwtToken();
+    testUserId = user._id;
 
     // Create an active project for testing
     const project = await Project.create({
@@ -100,12 +92,10 @@ describe('Data Persistence & Integrity Suite', () => {
     expect(getRes.body.data.task.status).toBe('completed');
   });
 
-  test('Database snapshot save and restore preserves all collections', async () => {
-    await saveDatabaseSnapshot();
+  test('Database snapshot restore never deletes existing MongoDB records', async () => {
     const restored = await restoreDatabaseSnapshot();
-    expect(restored).toBe(true);
+    expect(restored).toBe(false);
 
-    // Verify user still exists in database
     const userInDb = await User.findById(testUserId);
     expect(userInDb).toBeDefined();
     expect(userInDb.name).toBe('Persistent Dev');

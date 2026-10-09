@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Layers, Moon, Sun, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Layers, Moon, Sun, ArrowRight } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../common/Button';

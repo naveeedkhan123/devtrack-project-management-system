@@ -4,8 +4,6 @@ import {
   CheckSquare,
   Plus,
   Search,
-  Filter,
-  Calendar,
   Trash2,
   Edit,
   ExternalLink,
@@ -15,24 +13,26 @@ import { projectService } from '../../services/projectService';
 import { userService } from '../../services/userService';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import Pagination from '../../components/common/Pagination';
 import TaskModal from '../../components/tasks/TaskModal';
 import { formatDate, isOverdue } from '../../utils/dateUtils';
 import { getInitials } from '../../utils/formatters';
 
 const TasksPage = () => {
-  const { user, isManager, isAdmin } = useAuth();
+  const { isManager, isAdmin } = useAuth();
   const { success, error } = useToast();
 
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ page: 1, limit: 25, total: 0, pages: 0 });
 
   // Filters
   const [search, setSearch] = useState('');
@@ -40,6 +40,7 @@ const TasksPage = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [assigneeFilter, setAssigneeFilter] = useState('all');
+  const [dueFilter, setDueFilter] = useState('all');
 
   // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -47,12 +48,16 @@ const TasksPage = () => {
   const [taskToDelete, setTaskToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  useEffect(() => {
+    setPage(1);
+  }, [search, projectFilter, statusFilter, priorityFilter, assigneeFilter, dueFilter]);
+
   // Load filter options
   useEffect(() => {
     const loadMetadata = async () => {
       try {
         const [projRes, userRes] = await Promise.all([
-          projectService.getProjects(),
+          projectService.getProjects({ limit: 100 }),
           userService.getUsers(),
         ]);
         if (projRes?.data?.projects) setProjects(projRes.data.projects);
@@ -69,22 +74,26 @@ const TasksPage = () => {
     try {
       setLoading(true);
       const params = {};
+      params.page = page;
+      params.limit = 25;
       if (search) params.search = search;
       if (projectFilter !== 'all') params.project = projectFilter;
       if (statusFilter !== 'all') params.status = statusFilter;
       if (priorityFilter !== 'all') params.priority = priorityFilter;
       if (assigneeFilter !== 'all') params.assignedTo = assigneeFilter;
+      if (dueFilter === 'overdue') params.overdue = 'true';
 
       const res = await taskService.getTasks(params);
       if (res?.data?.tasks) {
         setTasks(res.data.tasks);
+        setPagination(res.data.pagination || { page, limit: 25, total: res.data.total, pages: 1 });
       }
     } catch (err) {
       error(err.response?.data?.message || 'Failed to load tasks');
     } finally {
       setLoading(false);
     }
-  }, [search, projectFilter, statusFilter, priorityFilter, assigneeFilter, error]);
+  }, [search, projectFilter, statusFilter, priorityFilter, assigneeFilter, dueFilter, page, error]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -149,7 +158,7 @@ const TasksPage = () => {
           />
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
           <select
             value={projectFilter}
             onChange={(e) => setProjectFilter(e.target.value)}
@@ -199,6 +208,16 @@ const TasksPage = () => {
                 {u.name}
               </option>
             ))}
+          </select>
+
+          <select
+            aria-label="Filter tasks by due date"
+            value={dueFilter}
+            onChange={(e) => setDueFilter(e.target.value)}
+            className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-brand-500"
+          >
+            <option value="all">All Due Dates</option>
+            <option value="overdue">Overdue only</option>
           </select>
         </div>
       </div>
@@ -297,7 +316,7 @@ const TasksPage = () => {
                             overdue ? 'text-rose-500 font-bold' : 'text-gray-500 dark:text-gray-400'
                           }`}
                         >
-                          {formatDate(task.dueDate)}
+                          {overdue ? 'Overdue · ' : ''}{formatDate(task.dueDate)}
                         </span>
                       </td>
 
@@ -341,6 +360,7 @@ const TasksPage = () => {
               </tbody>
             </table>
           </div>
+          <Pagination {...pagination} onPageChange={setPage} />
         </div>
       )}
 

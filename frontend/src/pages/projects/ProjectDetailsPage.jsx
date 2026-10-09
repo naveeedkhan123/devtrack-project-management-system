@@ -5,9 +5,6 @@ import {
   CheckSquare,
   Bug,
   Users,
-  Activity,
-  Calendar,
-  Clock,
   Plus,
   Edit,
   Trash2,
@@ -30,13 +27,13 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import ProjectModal from '../../components/projects/ProjectModal';
 import TaskModal from '../../components/tasks/TaskModal';
 import BugModal from '../../components/bugs/BugModal';
-import { formatDate, formatRelativeTime, isOverdue } from '../../utils/dateUtils';
-import { formatStatus, getInitials } from '../../utils/formatters';
+import { formatDate } from '../../utils/dateUtils';
+import { getInitials } from '../../utils/formatters';
 
 const ProjectDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, isManager, isAdmin } = useAuth();
+  const { isManager, isAdmin } = useAuth();
   const { success, error } = useToast();
 
   const [project, setProject] = useState(null);

@@ -5,12 +5,7 @@ import {
   Cpu,
   Clock,
   Shield,
-  Layers,
-  CheckSquare,
-  Bug,
   Users,
-  Activity,
-  CheckCircle2,
 } from 'lucide-react';
 import { dashboardService } from '../../services/dashboardService';
 import Card, { CardHeader, CardTitle, CardContent } from '../../components/common/Card';

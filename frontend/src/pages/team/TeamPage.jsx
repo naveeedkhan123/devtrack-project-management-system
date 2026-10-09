@@ -6,14 +6,9 @@ import {
   CheckSquare,
   Bug,
   FolderKanban,
-  Shield,
-  Code,
-  UserCheck,
 } from 'lucide-react';
 import { userService } from '../../services/userService';
-import { useAuth } from '../../context/AuthContext';
 import Card from '../../components/common/Card';
-import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
 import { getInitials } from '../../utils/formatters';
@@ -111,6 +106,7 @@ const TeamPage = () => {
                       <img
                         src={member.avatar}
                         alt={member.name}
+                        onError={(event) => { event.currentTarget.style.display = 'none'; }}
                         className="w-12 h-12 rounded-xl object-cover border border-gray-200 dark:border-gray-700 flex-shrink-0"
                       />
                     ) : (

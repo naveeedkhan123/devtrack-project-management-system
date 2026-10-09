@@ -3,6 +3,15 @@ const Project = require('../models/Project');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 const { logActivity } = require('../services/activityService');
 const { createNotification } = require('../services/notificationService');
+const { getAccessibleProjectIds, canAccessProject } = require('../services/projectAccess');
+const Comment = require('../models/Comment');
+const {
+  getPagination,
+  getPaginationMetadata,
+  isAllowedFilter,
+  isValidSearch,
+  escapeRegex,
+} = require('../utils/pagination');
 
 /**
  * @desc    Get all bugs with filters
@@ -12,6 +21,17 @@ const { createNotification } = require('../services/notificationService');
 const getBugs = async (req, res, next) => {
   try {
     const { project, status, severity, priority, assignedTo, search } = req.query;
+    const pagination = getPagination(req.query);
+    if (!pagination) return errorResponse(res, 'page and limit must be positive integers', 400);
+    if (!isAllowedFilter(status, ['open', 'in_progress', 'resolved', 'closed', 'reopened']) ||
+        !isAllowedFilter(severity, ['low', 'medium', 'high', 'critical']) ||
+        !isAllowedFilter(priority, ['low', 'medium', 'high', 'critical']) ||
+        (project !== undefined && project !== 'all' && typeof project !== 'string') ||
+        (assignedTo !== undefined && assignedTo !== 'all' &&
+          assignedTo !== 'unassigned' && typeof assignedTo !== 'string') ||
+        !isValidSearch(search)) {
+      return errorResponse(res, 'Invalid bug filters', 400);
+    }
     let query = {};
 
     if (project && project !== 'all') {
@@ -38,13 +58,15 @@ const getBugs = async (req, res, next) => {
       }
     }
 
-    // Developer role restriction if no specific project specified
-    if (req.user.role === 'developer' && !project) {
-      const userProjects = await Project.find({
-        $or: [{ members: req.user._id }, { manager: req.user._id }],
-      }).select('_id');
-      const projectIds = userProjects.map((p) => p._id);
-      query.project = { $in: projectIds };
+    if (req.user.role === 'developer') {
+      const accessibleProjectIds = await getAccessibleProjectIds(req.user);
+      if (project && project !== 'all' &&
+        !accessibleProjectIds.some((id) => id.toString() === project)) {
+        return errorResponse(res, 'Not authorized to view bugs in this project', 403);
+      }
+      query.project = project && project !== 'all'
+        ? project
+        : { $in: accessibleProjectIds };
     }
 
     if (search) {
@@ -52,21 +74,30 @@ const getBugs = async (req, res, next) => {
         ...(query.$and || []),
         {
           $or: [
-            { title: { $regex: search, $options: 'i' } },
-            { description: { $regex: search, $options: 'i' } },
-            { environment: { $regex: search, $options: 'i' } },
+            { title: { $regex: escapeRegex(search), $options: 'i' } },
+            { description: { $regex: escapeRegex(search), $options: 'i' } },
+            { environment: { $regex: escapeRegex(search), $options: 'i' } },
           ],
         },
       ];
     }
 
-    const bugs = await Bug.find(query)
-      .populate('project', 'name key status')
-      .populate('reportedBy', 'name email avatar')
-      .populate('assignedTo', 'name email avatar role')
-      .sort({ createdAt: -1 });
+    const [total, bugs] = await Promise.all([
+      Bug.countDocuments(query),
+      Bug.find(query)
+        .populate('project', 'name key status')
+        .populate('reportedBy', 'name email avatar')
+        .populate('assignedTo', 'name email avatar role')
+        .sort({ createdAt: -1 })
+        .skip(pagination.skip)
+        .limit(pagination.limit),
+    ]);
 
-    return successResponse(res, 'Bugs fetched successfully', { bugs, total: bugs.length });
+    return successResponse(res, 'Bugs fetched successfully', {
+      bugs,
+      total,
+      pagination: getPaginationMetadata(pagination, total),
+    });
   } catch (error) {
     next(error);
   }
@@ -86,6 +117,9 @@ const getBug = async (req, res, next) => {
 
     if (!bug) {
       return errorResponse(res, 'Bug not found', 404);
+    }
+    if (!canAccessProject(bug.project, req.user)) {
+      return errorResponse(res, 'Not authorized to view this bug', 403);
     }
 
     return successResponse(res, 'Bug fetched successfully', { bug });
@@ -118,6 +152,9 @@ const createBug = async (req, res, next) => {
     const projectDoc = await Project.findById(project);
     if (!projectDoc) {
       return errorResponse(res, 'Project not found', 404);
+    }
+    if (!canAccessProject(projectDoc, req.user)) {
+      return errorResponse(res, 'Not authorized to report bugs in this project', 403);
     }
 
     const bug = await Bug.create({
@@ -175,6 +212,10 @@ const updateBug = async (req, res, next) => {
     let bug = await Bug.findById(req.params.id);
     if (!bug) {
       return errorResponse(res, 'Bug not found', 404);
+    }
+    const projectDoc = await Project.findById(bug.project).select('members manager');
+    if (!canAccessProject(projectDoc, req.user)) {
+      return errorResponse(res, 'Not authorized to update this bug', 403);
     }
 
     const {
@@ -276,7 +317,12 @@ const deleteBug = async (req, res, next) => {
     if (!bug) {
       return errorResponse(res, 'Bug not found', 404);
     }
+    const projectDoc = await Project.findById(bug.project).select('members manager');
+    if (!canAccessProject(projectDoc, req.user)) {
+      return errorResponse(res, 'Not authorized to delete this bug', 403);
+    }
 
+    await Comment.deleteMany({ entityType: 'bug', entityId: bug._id });
     await Bug.findByIdAndDelete(req.params.id);
 
     await logActivity({

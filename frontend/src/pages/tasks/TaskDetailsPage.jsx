@@ -3,13 +3,9 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Calendar,
-  User,
-  Clock,
   Edit,
   Trash2,
-  Tag,
   FolderKanban,
-  CheckCircle2,
 } from 'lucide-react';
 import { taskService } from '../../services/taskService';
 import { useAuth } from '../../context/AuthContext';
@@ -87,7 +83,9 @@ const TaskDetailsPage = () => {
   if (!task) return null;
 
   const overdue = isOverdue(task.dueDate, task.status);
-  const canEdit = isManager || isAdmin || task.assignedTo?._id === user?._id;
+  const canEdit = isManager || isAdmin ||
+    task.project?.manager?.toString() === user?._id?.toString() ||
+    task.project?.members?.some((member) => member.toString() === user?._id?.toString());
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -130,6 +128,8 @@ const TaskDetailsPage = () => {
             <select
               value={task.status}
               onChange={handleStatusChange}
+              disabled={!canEdit}
+              aria-label="Task status"
               className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-brand-500"
             >
               <option value="todo">TODO</option>

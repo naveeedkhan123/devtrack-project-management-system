@@ -10,22 +10,18 @@ const { logActivity } = require('../services/activityService');
  */
 const register = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return errorResponse(res, 'An account with this email address already exists', 400);
     }
 
-    // Default first user to admin if database is empty, otherwise respect role or default to developer
-    const count = await User.countDocuments();
-    const assignedRole = count === 0 ? 'admin' : (role || 'developer');
-
     const user = await User.create({
       name,
       email,
       password,
-      role: assignedRole,
+      role: 'developer',
     });
 
     const token = user.getSignedJwtToken();
@@ -189,6 +185,14 @@ const changePassword = async (req, res, next) => {
  */
 const forgotPassword = async (req, res, next) => {
   try {
+    if (process.env.NODE_ENV === 'production') {
+      return errorResponse(
+        res,
+        'Password reset is not configured. Please contact your administrator.',
+        503
+      );
+    }
+
     const { email } = req.body;
 
     const user = await User.findOne({ email });
